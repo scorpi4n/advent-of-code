@@ -1,5 +1,5 @@
 # gleam
 *.beam
 *.ez
-/build
+**/gleam/build/
 erl_crash.dump
