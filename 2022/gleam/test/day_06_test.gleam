@@ -3,16 +3,14 @@ import gleam/list
 import gleeunit/should
 
 const part_1_examples = [
-  #("mjqjpqmgbljsphdztnvjfqwrcgsmlb", 7),
-  #("bvwbjplbgvbhsrlpgdmjqwftvncz", 5),
+  #("mjqjpqmgbljsphdztnvjfqwrcgsmlb", 7), #("bvwbjplbgvbhsrlpgdmjqwftvncz", 5),
   #("nppdvjthqldpwncqszvftbrmjlhg", 6),
   #("nznrnfrfntjfmvfwmzdfjlvtqnbhcprsg", 10),
   #("zcfzfwzzqfrljwzlrfnpqdbhtmscgvjw", 11),
 ]
 
 const part_2_examples = [
-  #("mjqjpqmgbljsphdztnvjfqwrcgsmlb", 19),
-  #("bvwbjplbgvbhsrlpgdmjqwftvncz", 23),
+  #("mjqjpqmgbljsphdztnvjfqwrcgsmlb", 19), #("bvwbjplbgvbhsrlpgdmjqwftvncz", 23),
   #("nppdvjthqldpwncqszvftbrmjlhg", 23),
   #("nznrnfrfntjfmvfwmzdfjlvtqnbhcprsg", 29),
   #("zcfzfwzzqfrljwzlrfnpqdbhtmscgvjw", 26),
