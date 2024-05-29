@@ -1,4 +1,4 @@
-import day_10 as today
+import day_11 as today
 import gleam/int
 import gleam/io
 import simplifile
@@ -16,5 +16,6 @@ pub fn main() {
   let answer_2 =
     input
     |> today.part_2()
+    |> int.to_string()
   io.print("Part 2: " <> answer_2)
 }
