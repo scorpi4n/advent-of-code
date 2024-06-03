@@ -1,4 +1,4 @@
-import day_11 as today
+import day_12 as today
 import gleam/int
 import gleam/io
 import simplifile
