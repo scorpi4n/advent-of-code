@@ -78,16 +78,9 @@ fn parse(string: String) -> Dict(Coord, State) {
   |> list.flat_map(fn(pair) {
     let #(from, to) = pair
 
-    let horizontal =
-      list.range(from: from.0, to: to.0) |> list.map(fn(x) { #(x, from.1) })
-
-    let vertical =
-      list.range(from: from.1, to: to.1) |> list.map(fn(y) { #(from.0, y) })
-
-    case horizontal {
-      [_] -> vertical
-      _ -> horizontal
-    }
+    use x <- list.flat_map(list.range(from: from.0, to: to.0))
+    use y <- list.map(list.range(from: from.1, to: to.1))
+    #(x, y)
   })
   |> list.map(fn(coord) { #(coord, Rock) })
   |> dict.from_list()
