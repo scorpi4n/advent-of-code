@@ -2,7 +2,6 @@ import aoc/internal.{type Coord}
 import gleam/bool
 import gleam/dict.{type Dict}
 import gleam/int
-import gleam/io
 import gleam/iterator
 import gleam/list.{Continue, Stop}
 import gleam/option.{None, Some}
