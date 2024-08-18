@@ -1,68 +1,55 @@
 import aoc/internal.{type Coord}
-import gleam/dict
+import gleam/bool
 import gleam/int
-import gleam/io
-import gleam/iterator
 import gleam/list
+import gleam/order
+import gleam/pair
 import gleam/regex
-import gleam/set.{type Set}
+import gleam/set
 import gleam/string
 
 const row = 2_000_000
 
+// const row = 10
+
+/// Inclusive range
+@internal
+pub type Range {
+  Range(start: Int, end: Int)
+}
+
 // 4000000
 // const search_area = 20
 
-// PERF: Currently runs in ~15s. If I use a custom range type instead of sets, I
-// may be able to increase performance. Using a custom range type also means
-// implementing a merge function for it
+// PERF: by using a Range type instead of a Set(Coord), I was able to improve
+// performance by about 40% (~14-15s down to ~8-10s).
 pub fn part_1(input: String) -> Int {
   let sensors =
     input
     |> internal.lines()
     |> list.filter(fn(line) { !string.is_empty(line) })
     |> list.map(parse_line)
-    |> dict.from_list()
-  let beacons = sensors |> dict.values() |> set.from_list()
+  let beacons =
+    sensors
+    |> list.map(pair.second)
+    |> set.from_list()
 
   sensors
-  |> dict.map_values(fn(sensor, beacon) { x_range(sensor, beacon, row) })
-  |> dict.fold(from: set.new(), with: fn(acc, _, range) {
-    set.union(acc, range)
+  |> list.filter_map(fn(pair) {
+    let #(sensor, beacon) = pair
+    x_range(sensor, beacon, row)
   })
+  |> merge_ranges()
+  |> list.flat_map(fn(range) {
+    use x <- list.map(list.range(from: range.start, to: range.end))
+    #(x, row)
+  })
+  |> set.from_list()
   |> set.difference(minus: beacons)
   |> set.size()
 }
 
 pub fn part_2(input: String) -> Int {
-  // let range = iterator.range(from: 0, to: 4_000_000)
-  // range
-  // |> iterator.map(fn(x) { range |> iterator.map(fn(y) { #(x, y) }) })
-  // |> iterator.flatten()
-  // |> iterator.map(io.debug)
-  // |> iterator.to_list()
-  // |> io.debug()
-
-  let sensors =
-    input
-    |> internal.lines()
-    |> list.filter(fn(line) { !string.is_empty(line) })
-    |> list.map(parse_line)
-    |> dict.from_list()
-  let beacons = sensors |> dict.values() |> set.from_list()
-
-  {
-    use y <- iterator.map(iterator.range(from: 0, to: 4_000_000))
-    sensors
-    |> dict.map_values(fn(sensor, beacon) { x_range(sensor, beacon, y) })
-    |> dict.fold(from: set.new(), with: fn(acc, _, range) {
-      set.union(acc, range)
-    })
-    |> set.difference(minus: beacons)
-    |> io.debug()
-  }
-  |> iterator.run()
-
   todo
 }
 
@@ -90,20 +77,53 @@ pub fn manhattan_distance(from from: Coord, to to: Coord) -> Int {
 
 /// Returns a set of coordinates that are in range of the given sensor along the
 /// given y-value.
-fn x_range(sensor: Coord, beacon: Coord, over y: Int) -> Set(Coord) {
+fn x_range(sensor: Coord, beacon: Coord, over y: Int) -> Result(Range, Nil) {
   let distance = manhattan_distance(from: sensor, to: beacon)
   let y_distance_to_target_row = int.absolute_value(sensor.1 - y)
   let x_distance_leftover =
     int.absolute_value(distance - y_distance_to_target_row)
+  let is_out_of_range = y_distance_to_target_row > distance
 
-  case y_distance_to_target_row <= distance {
-    True ->
-      list.range(
-        from: sensor.0 - x_distance_leftover,
-        to: sensor.0 + x_distance_leftover,
-      )
-      |> list.map(fn(x) { #(x, y) })
-      |> set.from_list()
-    False -> set.new()
+  use <- bool.guard(return: Error(Nil), when: is_out_of_range)
+  Ok(Range(
+    start: sensor.0 - x_distance_leftover,
+    end: sensor.0 + x_distance_leftover,
+  ))
+}
+
+@internal
+pub fn merge_ranges(ranges: List(Range)) -> List(Range) {
+  // 1. Sort list of ranges
+  // 2. Make a queue of new ranges (to be turned into the returned list)
+
+  let sorted_ranges =
+    list.sort(ranges, by: fn(a, b) {
+      let start_order = int.compare(a.start, b.start)
+      let end_order = int.compare(a.end, b.end)
+      start_order |> order.break_tie(with: end_order)
+    })
+
+  do_merge_ranges(sorted_ranges, [])
+}
+
+fn do_merge_ranges(ranges: List(Range), stack: List(Range)) -> List(Range) {
+  // assume list is already sorted
+
+  case ranges, stack {
+    // no more ranges to merge
+    [], _ -> stack |> list.reverse()
+    [first, ..rest], [] -> do_merge_ranges(rest, [first])
+    [next_range, ..rest], [prev_range, ..stack] -> {
+      let should_merge = next_range.start <= prev_range.end + 1
+      case should_merge {
+        True -> {
+          let min_start = int.min(prev_range.start, next_range.start)
+          let max_end = int.max(prev_range.end, next_range.end)
+          let new_range = Range(start: min_start, end: max_end)
+          do_merge_ranges(rest, [new_range, ..stack])
+        }
+        False -> do_merge_ranges(rest, [next_range, prev_range, ..stack])
+      }
+    }
   }
 }
