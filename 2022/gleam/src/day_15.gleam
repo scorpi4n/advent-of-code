@@ -1,25 +1,26 @@
 import aoc/internal.{type Coord}
 import gleam/bool
 import gleam/int
+import gleam/iterator
 import gleam/list
 import gleam/order
 import gleam/pair
 import gleam/regex
+import gleam/result
 import gleam/set
 import gleam/string
 
-const row = 2_000_000
+// TEST: actual value is 2_000_000
+const row = 10
 
-// const row = 10
+// TEST: actual value is 4_000_000
+const search_area = 20
 
 /// Inclusive range
 @internal
 pub type Range {
   Range(start: Int, end: Int)
 }
-
-// 4000000
-// const search_area = 20
 
 // PERF: by using a Range type instead of a Set(Coord), I was able to improve
 // performance by about 40% (~14-15s down to ~8-10s).
@@ -50,7 +51,39 @@ pub fn part_1(input: String) -> Int {
 }
 
 pub fn part_2(input: String) -> Int {
-  todo
+  let sensors =
+    input
+    |> internal.lines()
+    |> list.filter(fn(line) { !string.is_empty(line) })
+    |> list.map(parse_line)
+
+  let assert Ok(#(x, y)) =
+    {
+      use y <- iterator.map(iterator.range(from: 0, to: search_area))
+
+      sensors
+      |> list.filter_map(fn(pair) {
+        let #(sensor, beacon) = pair
+        x_range(sensor, beacon, y)
+      })
+      |> merge_ranges()
+    }
+    |> iterator.index()
+    |> iterator.find_map(fn(pair) {
+      let #(ranges, _y) = pair
+      case list.length(ranges) > 1 {
+        True -> Ok(pair)
+        False -> Error(Nil)
+      }
+    })
+    |> result.map(fn(pair) {
+      let #(ranges, y) = pair
+      let assert [first, second] = ranges
+      let assert True = first.end + 1 == second.start - 1
+      #(first.end + 1, y)
+    })
+
+  int.multiply(x, 4_000_000) |> int.add(y)
 }
 
 /// Returns the coordinates for a sensor and its closest beacon.
